@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 // Task represents a single task
@@ -14,6 +15,21 @@ type Task struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Completed   bool   `json:"completed"`
+	DueDate     string `json:"due_date"`
+}
+
+// Validate performs input validation on the Task fields.
+func (t *Task) Validate() error {
+	if t.Title == "" {
+		return ErrTitleEmpty
+	}
+	if t.DueDate != "" {
+		_, err := time.Parse("2006-01-02", t.DueDate)
+		if err != nil {
+			return ErrInvalidDueDate
+		}
+	}
+	return nil
 }
 
 func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
@@ -81,6 +97,10 @@ func createTaskHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	if err := task.Validate(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	newTask, err := createTask(task)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -94,6 +114,10 @@ func createTaskHandler(w http.ResponseWriter, r *http.Request) {
 func updateTaskHandler(w http.ResponseWriter, r *http.Request, id int) {
 	var task Task
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := task.Validate(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
