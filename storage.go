@@ -20,7 +20,8 @@ func initDB(filepath string) {
 		"id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 		"title" TEXT,
 		"description" TEXT,
-		"completed" BOOLEAN
+		"completed" BOOLEAN,
+		"due_date" TEXT
 	);`
 
 	_, err = db.Exec(createTableSQL)
@@ -30,7 +31,7 @@ func initDB(filepath string) {
 }
 
 func getTasks() ([]Task, error) {
-	rows, err := db.Query("SELECT id, title, description, completed FROM tasks")
+	rows, err := db.Query("SELECT id, title, description, completed, due_date FROM tasks")
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +40,7 @@ func getTasks() ([]Task, error) {
 	var tasks []Task
 	for rows.Next() {
 		var task Task
-		if err := rows.Scan(&task.ID, &task.Title, &task.Description, &task.Completed); err != nil {
+		if err := rows.Scan(&task.ID, &task.Title, &task.Description, &task.Completed, &task.DueDate); err != nil {
 			return nil, err
 		}
 		tasks = append(tasks, task)
@@ -48,7 +49,7 @@ func getTasks() ([]Task, error) {
 }
 
 func createTask(task Task) (Task, error) {
-	res, err := db.Exec("INSERT INTO tasks (title, description, completed) VALUES (?, ?, ?)", task.Title, task.Description, task.Completed)
+	res, err := db.Exec("INSERT INTO tasks (title, description, completed, due_date) VALUES (?, ?, ?, ?)", task.Title, task.Description, task.Completed, task.DueDate)
 	if err != nil {
 		return Task{}, err
 	}
@@ -62,12 +63,12 @@ func createTask(task Task) (Task, error) {
 
 func getTaskByID(id int) (Task, error) {
 	var task Task
-	err := db.QueryRow("SELECT id, title, description, completed FROM tasks WHERE id = ?", id).Scan(&task.ID, &task.Title, &task.Description, &task.Completed)
+	err := db.QueryRow("SELECT id, title, description, completed, due_date FROM tasks WHERE id = ?", id).Scan(&task.ID, &task.Title, &task.Description, &task.Completed, &task.DueDate)
 	return task, err
 }
 
 func updateTask(task Task) error {
-	_, err := db.Exec("UPDATE tasks SET title = ?, description = ?, completed = ? WHERE id = ?", task.Title, task.Description, task.Completed, task.ID)
+	_, err := db.Exec("UPDATE tasks SET title = ?, description = ?, completed = ?, due_date = ? WHERE id = ?", task.Title, task.Description, task.Completed, task.DueDate, task.ID)
 	return err
 }
 
